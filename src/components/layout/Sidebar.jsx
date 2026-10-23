@@ -7,15 +7,28 @@ import {
   Settings,
   GraduationCap,
   PlusCircle,
+  LogOut,
 } from 'lucide-react';
+import useAuth from '../../context/useAuth';
+import RoleBadge from '../auth/RoleBadge';
 
 export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
+  const { user, profile, role, signOut } = useAuth();
+
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/leads', label: 'Student Leads', icon: Users, badge: 'Active' },
     { to: '/follow-ups', label: 'Follow-ups', icon: CalendarCheck },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Staff Counsellor';
+  const initials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <>
@@ -75,15 +88,39 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
           })}
         </nav>
 
-        {/* User Profile Footer */}
+        {/* Authenticated User Profile Footer */}
         <div className="sidebar-footer">
           <div className="user-avatar" aria-label="User avatar">
-            BP
+            {initials}
           </div>
           <div className="user-info">
-            <p className="user-name">Staff Counsellor</p>
-            <span className="user-role-tag">Counsellor Role</span>
+            <p className="user-name" title={displayName}>{displayName}</p>
+            <div style={{ marginTop: '0.125rem' }}>
+              <RoleBadge role={role} showIcon={false} />
+            </div>
           </div>
+          {user && (
+            <button
+              type="button"
+              onClick={signOut}
+              title="Sign Out"
+              aria-label="Sign Out"
+              style={{
+                color: '#94a3b8',
+                padding: '0.375rem',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'color 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+            >
+              <LogOut size={16} />
+            </button>
+          )}
         </div>
       </aside>
     </>

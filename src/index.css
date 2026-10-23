@@ -629,4 +629,14 @@ input, select, textarea {
   .page-content-area {
     padding: 1rem;
   }
+
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-showcase {
+    display: none !important;
+  }
 }

@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Bell, User } from 'lucide-react';
+import { Menu, X, Bell, LogOut } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
+import RoleBadge from '../auth/RoleBadge';
+import useAuth from '../../context/useAuth';
 
 export default function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, profile, role, signOut } = useAuth();
 
   // Determine current page title
   function getPageTitle() {
@@ -20,6 +23,14 @@ export default function AppLayout() {
     if (path === '/settings') return 'Institute & Profile Settings';
     return 'BrightPath CRM';
   }
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Staff Counsellor';
+  const initials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <div className="app-layout">
@@ -54,6 +65,9 @@ export default function AppLayout() {
           </div>
 
           <div className="topbar-right">
+            {/* Live Role Badge */}
+            <RoleBadge role={role} />
+
             <button
               type="button"
               className="btn btn-outline btn-sm"
@@ -62,21 +76,47 @@ export default function AppLayout() {
             >
               <Bell size={16} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+
+            {/* User Chip */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                paddingLeft: '0.5rem',
+                borderLeft: '1px solid var(--border-color)',
+              }}
+            >
               <div
                 style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: 'var(--radius-full)',
-                  backgroundColor: '#e2e8f0',
-                  color: 'var(--text-main)',
+                  backgroundColor: '#e0e7ff',
+                  color: '#3730a3',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
                 }}
+                title={user?.email || displayName}
               >
-                <User size={16} />
+                {initials}
               </div>
+
+              {user && (
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}
+                  title="Sign Out"
+                >
+                  <LogOut size={14} />
+                  <span className="hide-on-mobile">Sign Out</span>
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -105,7 +145,7 @@ export default function AppLayout() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            This modal shell verifies interactive dialog state and layout for Phase 1.
+            This modal shell verifies interactive dialog state and layout.
             Full database persistence with Supabase will be activated in Phase 5.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
