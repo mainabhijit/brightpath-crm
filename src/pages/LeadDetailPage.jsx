@@ -4,11 +4,10 @@ import {
   ArrowLeft,
   Phone,
   Mail,
-  Calendar,
   User,
   GraduationCap,
-  Clock,
   Edit3,
+  Plus,
   Trash2,
   AlertCircle,
   Tag,
@@ -21,12 +20,17 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import EditLeadModal from '../features/leads/EditLeadModal';
 import StatusChangeModal from '../features/leads/StatusChangeModal';
+import FollowUpList from '../features/followups/FollowUpList';
+import CreateFollowUpModal from '../features/followups/CreateFollowUpModal';
+import ActivityTimeline from '../features/activities/ActivityTimeline';
 import {
   fetchLeadById,
   updateLeadStatus,
   deleteLead,
   STATUS_OPTIONS,
 } from '../services/leadService';
+import { fetchFollowUps, completeFollowUp } from '../services/followUpService';
+import { getLeadActivities } from '../services/activityService';
 import useAuth from '../context/useAuth';
 
 export default function LeadDetailPage() {
@@ -42,6 +46,10 @@ export default function LeadDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [followUps, setFollowUps] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
 
   const loadLead = useCallback(async () => {
     setLoading(true);
@@ -60,9 +68,30 @@ export default function LeadDetailPage() {
     }
   }, [id]);
 
+  // Follow-ups and activity history are refreshed after every action that logs an activity
+  const loadTimeline = useCallback(async () => {
+    const [followUpRes, activityRes] = await Promise.all([
+      fetchFollowUps({ leadId: id }),
+      getLeadActivities(id),
+    ]);
+    setFollowUps(followUpRes.data);
+    setActivities(activityRes.data);
+    setTimelineLoading(false);
+  }, [id]);
+
   useEffect(() => {
     loadLead();
-  }, [loadLead]);
+    loadTimeline();
+  }, [loadLead, loadTimeline]);
+
+  async function handleCompleteFollowUp(task) {
+    const { error } = await completeFollowUp(task, user?.id);
+    if (error) {
+      alert('Failed to complete follow-up: ' + error);
+      return;
+    }
+    await loadTimeline();
+  }
 
   // Handle status selection from dropdown
   async function handleStatusSelect(newStatus) {
@@ -80,6 +109,7 @@ export default function LeadDetailPage() {
         alert('Failed to update status: ' + error);
       } else {
         setLead((prev) => ({ ...prev, status: data.status, lost_reason: null }));
+        loadTimeline();
       }
     } catch (err) {
       alert(err.message);
@@ -95,6 +125,7 @@ export default function LeadDetailPage() {
       throw new Error(error);
     }
     setLead((prev) => ({ ...prev, status: 'Lost', lost_reason: reason }));
+    loadTimeline();
   }
 
   // Handle Delete Lead
@@ -317,27 +348,29 @@ export default function LeadDetailPage() {
 
         {/* Right Column: Follow-up & Audit Trail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Scheduled Follow-up Card */}
+          {/* Follow-up Manager Card */}
           <Card
-            title="Scheduled Follow-up Action"
-            subtitle="Next contact milestone for this enquiry"
+            title="Follow-ups"
+            subtitle="Scheduled calls and meetings for this enquiry"
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<Plus size={14} />}
+                onClick={() => setIsFollowUpModalOpen(true)}
+              >
+                Schedule
+              </Button>
+            }
           >
-            {lead.follow_ups && lead.follow_ups.length > 0 ? (
-              <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8125rem', marginBottom: '0.25rem' }}>
-                  <Clock size={14} /> Scheduled Follow-up
-                </div>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
-                  {lead.follow_ups[0].note}
-                </p>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Due: {new Date(lead.follow_ups[0].due_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
-                </span>
-              </div>
+            {timelineLoading ? (
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Loading follow-ups...</p>
             ) : (
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                No follow-up calls scheduled yet. Scheduling tasks will be activated in Phase 6.
-              </p>
+              <FollowUpList
+                followUps={followUps}
+                onComplete={handleCompleteFollowUp}
+                showLead={false}
+              />
             )}
           </Card>
 
@@ -346,18 +379,7 @@ export default function LeadDetailPage() {
             title="Audit & Activity Trail"
             subtitle="Chronological log of counsellor actions and state transitions"
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: 'var(--radius-full)', backgroundColor: 'var(--primary)', marginTop: '0.375rem', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>Enquiry registered in CRM</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <Calendar size={11} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                    {createdDate}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ActivityTimeline activities={activities} loading={timelineLoading} />
           </Card>
         </div>
       </div>
@@ -369,8 +391,18 @@ export default function LeadDetailPage() {
         lead={lead}
         onLeadUpdated={(updated) => {
           setLead(updated);
+          loadTimeline();
         }}
       />
+
+      {/* Schedule Follow-up Modal */}
+      {isFollowUpModalOpen && (
+        <CreateFollowUpModal
+          lead={lead}
+          onClose={() => setIsFollowUpModalOpen(false)}
+          onCreated={loadTimeline}
+        />
+      )}
 
       {/* Mandatory Lost Reason Modal */}
       <StatusChangeModal

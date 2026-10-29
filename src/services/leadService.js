@@ -1,4 +1,5 @@
 import { supabase, isConfigured } from '../lib/supabaseClient';
+import { logActivity } from './activityService';
 
 /**
  * Lead Management Service Layer
@@ -107,8 +108,7 @@ export async function fetchLeadById(id) {
       .select(`
         *,
         assigned_to_profile:assigned_to (id, full_name, role),
-        created_by_profile:created_by (id, full_name),
-        follow_ups (id, status, due_at, note)
+        created_by_profile:created_by (id, full_name)
       `)
       .eq('id', id)
       .single();
@@ -158,10 +158,10 @@ export async function createLead(leadData, userId) {
 
     // Log automated initial activity
     if (data?.id) {
-      await supabase.from('activities').insert({
-        lead_id: data.id,
-        actor_id: userId || null,
-        activity_type: 'lead_created',
+      await logActivity({
+        leadId: data.id,
+        actorId: userId || null,
+        type: 'lead_created',
         description: `New enquiry captured for ${data.course_interest} via ${data.source}`,
         metadata: { source: data.source, course: data.course_interest },
       });
@@ -193,10 +193,10 @@ export async function updateLead(id, updates, userId) {
     if (error) throw error;
 
     // Log activity if details were updated
-    await supabase.from('activities').insert({
-      lead_id: id,
-      actor_id: userId || null,
-      activity_type: 'lead_updated',
+    await logActivity({
+      leadId: id,
+      actorId: userId || null,
+      type: 'lead_updated',
       description: 'Lead profile and contact information updated',
       metadata: updates,
     });
@@ -240,10 +240,10 @@ export async function updateLeadStatus(id, newStatus, lostReason = null, userId 
       ? `Enquiry marked as Lost. Reason: ${lostReason}`
       : `Status changed to ${newStatus}`;
 
-    await supabase.from('activities').insert({
-      lead_id: id,
-      actor_id: userId || null,
-      activity_type: 'status_updated',
+    await logActivity({
+      leadId: id,
+      actorId: userId || null,
+      type: 'status_updated',
       description: desc,
       metadata: { new_status: newStatus, lost_reason: lostReason },
     });
