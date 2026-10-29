@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
+import { LOST_REASON_PRESETS } from '../../services/leadService';
 
-export const LOST_REASON_PRESETS = [
-  'Joined competitor institute',
-  'Financial / fee constraints',
-  'Commute distance / center location too far',
-  'Changed academic stream or target career',
-  'Parent decided against external coaching',
-  'Not responding after multiple attempts / Invalid number',
-  'Other reason',
-];
-
+/**
+ * Mount only while open so each opening starts from the first preset.
+ */
 export default function StatusChangeModal({
-  isOpen,
   onClose,
   leadName,
   onConfirmLost,
@@ -48,7 +41,7 @@ export default function StatusChangeModal({
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title="Record Reason for Lost Enquiry"
       maxWidth="480px"
@@ -89,12 +82,12 @@ export default function StatusChangeModal({
         </div>
 
         {errorMsg && (
-          <p style={{ color: '#b91c1c', fontSize: '0.8125rem', fontWeight: 600 }}>{errorMsg}</p>
+          <p role="alert" style={{ color: '#b91c1c', fontSize: '0.8125rem', fontWeight: 600 }}>{errorMsg}</p>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-          <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Primary Reason:</label>
-          <select
+          <label htmlFor="lost-reason-preset" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Primary Reason:</label>
+          <select id="lost-reason-preset"
             value={selectedPreset}
             onChange={(e) => setSelectedPreset(e.target.value)}
             style={{
@@ -113,8 +106,8 @@ export default function StatusChangeModal({
 
         {selectedPreset === 'Other reason' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Describe specific reason:</label>
-            <textarea
+            <label htmlFor="lost-reason-custom" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Describe specific reason:</label>
+            <textarea id="lost-reason-custom"
               rows={3}
               placeholder="Provide details about the student's decision..."
               value={customReason}

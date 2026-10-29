@@ -32,14 +32,17 @@ import {
 import { fetchFollowUps, completeFollowUp } from '../services/followUpService';
 import { getLeadActivities } from '../services/activityService';
 import useAuth from '../context/useAuth';
+import useToast from '../context/useToast';
 
 export default function LeadDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin, isManager } = useAuth();
+  const toast = useToast();
 
   const [lead, setLead] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // id of the lead the current state belongs to; anything else means "still loading"
+  const [loadedId, setLoadedId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStatusLostModalOpen, setIsStatusLostModalOpen] = useState(false);
@@ -51,33 +54,27 @@ export default function LeadDetailPage() {
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
 
-  const loadLead = useCallback(async () => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const { data, error } = await fetchLeadById(id);
-      if (error) {
-        setErrorMsg(error);
-      } else {
-        setLead(data);
-      }
-    } catch (err) {
-      setErrorMsg(err.message || 'Error loading lead details');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
+  const loading = loadedId !== id;
+
+  const loadLead = useCallback(() => (
+    fetchLeadById(id).then(({ data, error }) => {
+      setLead(error ? null : data);
+      setErrorMsg(error || '');
+      setLoadedId(id);
+    })
+  ), [id]);
 
   // Follow-ups and activity history are refreshed after every action that logs an activity
-  const loadTimeline = useCallback(async () => {
-    const [followUpRes, activityRes] = await Promise.all([
+  const loadTimeline = useCallback(() => (
+    Promise.all([
       fetchFollowUps({ leadId: id }),
       getLeadActivities(id),
-    ]);
-    setFollowUps(followUpRes.data);
-    setActivities(activityRes.data);
-    setTimelineLoading(false);
-  }, [id]);
+    ]).then(([followUpRes, activityRes]) => {
+      setFollowUps(followUpRes.data);
+      setActivities(activityRes.data);
+      setTimelineLoading(false);
+    })
+  ), [id]);
 
   useEffect(() => {
     loadLead();
@@ -87,9 +84,10 @@ export default function LeadDetailPage() {
   async function handleCompleteFollowUp(task) {
     const { error } = await completeFollowUp(task, user?.id);
     if (error) {
-      alert('Failed to complete follow-up: ' + error);
+      toast.error(error, 'Failed to complete follow-up.');
       return;
     }
+    toast.success('Follow-up marked as completed.');
     await loadTimeline();
   }
 
@@ -106,13 +104,14 @@ export default function LeadDetailPage() {
     try {
       const { data, error } = await updateLeadStatus(lead.id, newStatus, null, user?.id);
       if (error) {
-        alert('Failed to update status: ' + error);
+        toast.error(error, 'Failed to update status.');
       } else {
         setLead((prev) => ({ ...prev, status: data.status, lost_reason: null }));
+        toast.success(`Stage changed to ${data.status}.`);
         loadTimeline();
       }
     } catch (err) {
-      alert(err.message);
+      toast.error(err, 'Failed to update status.');
     } finally {
       setStatusUpdating(false);
     }
@@ -120,11 +119,12 @@ export default function LeadDetailPage() {
 
   // Confirm Lost status with reason
   async function handleConfirmLost(reason) {
-    const { data, error } = await updateLeadStatus(lead.id, 'Lost', reason, user?.id);
+    const { error } = await updateLeadStatus(lead.id, 'Lost', reason, user?.id);
     if (error) {
       throw new Error(error);
     }
     setLead((prev) => ({ ...prev, status: 'Lost', lost_reason: reason }));
+    toast.success('Enquiry marked as Lost.');
     loadTimeline();
   }
 
@@ -134,12 +134,13 @@ export default function LeadDetailPage() {
     try {
       const { error } = await deleteLead(lead.id);
       if (error) {
-        alert('Failed to delete lead: ' + error);
+        toast.error(error, 'Failed to delete lead.');
       } else {
+        toast.success(`${lead.full_name} was deleted.`);
         navigate('/leads', { replace: true });
       }
     } catch (err) {
-      alert(err.message);
+      toast.error(err, 'Failed to delete lead.');
     } finally {
       setDeleting(false);
     }
@@ -222,10 +223,10 @@ export default function LeadDetailPage() {
           {/* Status Changer Dropdown & Edit Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              <label htmlFor="lead-stage-select" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                 Stage:
               </label>
-              <select
+              <select id="lead-stage-select"
                 value={lead.status}
                 disabled={statusUpdating}
                 onChange={(e) => handleStatusSelect(e.target.value)}
@@ -385,15 +386,17 @@ export default function LeadDetailPage() {
       </div>
 
       {/* Edit Details Modal */}
-      <EditLeadModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        lead={lead}
-        onLeadUpdated={(updated) => {
-          setLead(updated);
-          loadTimeline();
-        }}
-      />
+      {isEditModalOpen && (
+        <EditLeadModal
+          onClose={() => setIsEditModalOpen(false)}
+          lead={lead}
+          onLeadUpdated={() => {
+            // Re-fetch so joined fields (assigned counsellor name) stay accurate
+            loadLead();
+            loadTimeline();
+          }}
+        />
+      )}
 
       {/* Schedule Follow-up Modal */}
       {isFollowUpModalOpen && (
@@ -405,12 +408,13 @@ export default function LeadDetailPage() {
       )}
 
       {/* Mandatory Lost Reason Modal */}
-      <StatusChangeModal
-        isOpen={isStatusLostModalOpen}
-        onClose={() => setIsStatusLostModalOpen(false)}
-        leadName={lead.full_name}
-        onConfirmLost={handleConfirmLost}
-      />
+      {isStatusLostModalOpen && (
+        <StatusChangeModal
+          onClose={() => setIsStatusLostModalOpen(false)}
+          leadName={lead.full_name}
+          onConfirmLost={handleConfirmLost}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal

@@ -1,4 +1,5 @@
 import { supabase, isConfigured } from '../lib/supabaseClient';
+import { friendlyError } from '../lib/errorMessages';
 import { logActivity } from './activityService';
 
 /**
@@ -26,6 +27,16 @@ export const SOURCE_OPTIONS = [
   'Campus Seminar',
   'Newspaper / Leaflet',
   'Other',
+];
+
+export const LOST_REASON_PRESETS = [
+  'Joined competitor institute',
+  'Financial / fee constraints',
+  'Commute distance / center location too far',
+  'Changed academic stream or target career',
+  'Parent decided against external coaching',
+  'Not responding after multiple attempts / Invalid number',
+  'Other reason',
 ];
 
 export const STATUS_OPTIONS = [
@@ -90,7 +101,7 @@ export async function fetchLeads({
     return { data: data || [], error: null };
   } catch (err) {
     console.error('[leadService] fetchLeads error:', err);
-    return { data: [], error: err.message || 'Failed to fetch leads' };
+    return { data: [], error: friendlyError(err, 'Failed to fetch leads') };
   }
 }
 
@@ -117,7 +128,7 @@ export async function fetchLeadById(id) {
     return { data, error: null };
   } catch (err) {
     console.error('[leadService] fetchLeadById error:', err);
-    return { data: null, error: err.message || 'Lead not found' };
+    return { data: null, error: friendlyError(err, 'Lead not found') };
   }
 }
 
@@ -170,7 +181,7 @@ export async function createLead(leadData, userId) {
     return { data, error: null };
   } catch (err) {
     console.error('[leadService] createLead error:', err);
-    return { data: null, error: err.message || 'Failed to create lead' };
+    return { data: null, error: friendlyError(err, 'Failed to create lead') };
   }
 }
 
@@ -204,7 +215,7 @@ export async function updateLead(id, updates, userId) {
     return { data, error: null };
   } catch (err) {
     console.error('[leadService] updateLead error:', err);
-    return { data: null, error: err.message || 'Failed to update lead' };
+    return { data: null, error: friendlyError(err, 'Failed to update lead') };
   }
 }
 
@@ -251,7 +262,7 @@ export async function updateLeadStatus(id, newStatus, lostReason = null, userId 
     return { data, error: null };
   } catch (err) {
     console.error('[leadService] updateLeadStatus error:', err);
-    return { data: null, error: err.message || 'Failed to update lead status' };
+    return { data: null, error: friendlyError(err, 'Failed to update lead status') };
   }
 }
 
@@ -264,16 +275,21 @@ export async function deleteLead(id) {
   }
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('leads')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
 
     if (error) throw error;
+    // RLS silently filters a disallowed delete to zero rows instead of erroring
+    if (!data || data.length === 0) {
+      throw new Error("You don't have permission to delete this lead.");
+    }
     return { error: null };
   } catch (err) {
     console.error('[leadService] deleteLead error:', err);
-    return { error: err.message || 'Failed to delete lead' };
+    return { error: friendlyError(err, 'Failed to delete lead') };
   }
 }
 
@@ -295,6 +311,6 @@ export async function fetchCounsellors() {
     return { data: data || [], error: null };
   } catch (err) {
     console.error('[leadService] fetchCounsellors error:', err);
-    return { data: [], error: err.message };
+    return { data: [], error: friendlyError(err) };
   }
 }

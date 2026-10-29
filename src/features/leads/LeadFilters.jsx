@@ -34,7 +34,7 @@ export default function LeadFilters({
     <Card style={{ marginBottom: '1.25rem', padding: '1rem' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
         {/* Top Row: Search input + dropdowns */}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="lead-filters-row" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Input */}
           <div style={{ position: 'relative', flex: '1 1 280px', minWidth: '240px' }}>
             <Search
@@ -48,7 +48,8 @@ export default function LeadFilters({
               }}
             />
             <input
-              type="text"
+              type="search"
+              aria-label="Search enquiries by name, phone, email, or course"
               placeholder="Search by student name, phone, course..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -83,6 +84,7 @@ export default function LeadFilters({
           {/* Course Dropdown */}
           <div style={{ flex: '0 1 200px' }}>
             <select
+              aria-label="Filter by course"
               value={selectedCourse}
               onChange={(e) => onCourseChange(e.target.value)}
               style={{
@@ -105,6 +107,7 @@ export default function LeadFilters({
           {/* Source Dropdown */}
           <div style={{ flex: '0 1 180px' }}>
             <select
+              aria-label="Filter by source"
               value={selectedSource}
               onChange={(e) => onSourceChange(e.target.value)}
               style={{
@@ -140,8 +143,8 @@ export default function LeadFilters({
 
         {/* Bottom Row: Status Filter Chips + Results count */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.25rem' }}>
+          <div role="group" aria-label="Filter by status" style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span aria-hidden="true" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginRight: '0.25rem' }}>
               <Filter size={13} /> Status:
             </span>
             {statusList.map((st) => {
@@ -150,6 +153,7 @@ export default function LeadFilters({
                 <button
                   key={st.key}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => onStatusChange(st.key)}
                   style={{
                     fontSize: '0.75rem',
@@ -170,7 +174,7 @@ export default function LeadFilters({
             })}
           </div>
 
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          <span aria-live="polite" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             Showing <strong>{totalResults}</strong> {totalResults === 1 ? 'enquiry' : 'enquiries'}
           </span>
         </div>

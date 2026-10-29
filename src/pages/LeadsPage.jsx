@@ -5,10 +5,8 @@ import LeadFilters from '../features/leads/LeadFilters';
 import LeadTable from '../features/leads/LeadTable';
 import CreateLeadModal from '../features/leads/CreateLeadModal';
 import { fetchLeads } from '../services/leadService';
-import useAuth from '../context/useAuth';
 
 export default function LeadsPage() {
-  const { user } = useAuth();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -96,6 +94,7 @@ export default function LeadsPage() {
       {/* Error Banner */}
       {errorMsg && (
         <div
+          role="alert"
           style={{
             padding: '0.75rem 1rem',
             borderRadius: 'var(--radius-md)',
@@ -109,7 +108,7 @@ export default function LeadsPage() {
             gap: '0.5rem',
           }}
         >
-          <AlertCircle size={16} />
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -138,15 +137,16 @@ export default function LeadsPage() {
       />
 
       {/* Create Lead Modal */}
-      <CreateLeadModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onLeadCreated={(newLead) => {
-          // Prepend newly created lead or reload list
-          setLeads((prev) => [newLead, ...prev]);
-          loadLeads();
-        }}
-      />
+      {isCreateModalOpen && (
+        <CreateLeadModal
+          onClose={() => setIsCreateModalOpen(false)}
+          onLeadCreated={(newLead) => {
+            // Prepend newly created lead or reload list
+            setLeads((prev) => [newLead, ...prev]);
+            loadLeads();
+          }}
+        />
+      )}
     </div>
   );
 }

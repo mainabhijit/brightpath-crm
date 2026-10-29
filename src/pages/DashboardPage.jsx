@@ -65,6 +65,7 @@ export default function DashboardPage() {
 
       {errorMsg && (
         <div
+          role="alert"
           style={{
             marginBottom: '1rem',
             padding: '0.75rem 1rem',

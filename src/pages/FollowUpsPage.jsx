@@ -5,9 +5,11 @@ import FollowUpList from '../features/followups/FollowUpList';
 import CreateFollowUpModal from '../features/followups/CreateFollowUpModal';
 import { fetchFollowUps, completeFollowUp, getOverdue } from '../services/followUpService';
 import useAuth from '../context/useAuth';
+import useToast from '../context/useToast';
 
 export default function FollowUpsPage() {
   const { user } = useAuth();
+  const toast = useToast();
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -28,9 +30,10 @@ export default function FollowUpsPage() {
   async function handleComplete(task) {
     const { data, error } = await completeFollowUp(task, user?.id);
     if (error) {
-      alert('Failed to complete follow-up: ' + error);
+      toast.error(error, 'Failed to complete follow-up.');
       return;
     }
+    toast.success('Follow-up marked as completed.');
     setFollowUps((prev) => prev.map((f) => (f.id === task.id ? { ...f, ...data } : f)));
   }
 
@@ -53,6 +56,7 @@ export default function FollowUpsPage() {
 
       {errorMsg && (
         <div
+          role="alert"
           style={{
             marginBottom: '1rem',
             padding: '0.75rem 1rem',

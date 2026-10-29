@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Phone,
   Mail,
@@ -99,7 +99,7 @@ export default function LeadTable({
   return (
     <Card style={{ padding: 0, overflow: 'hidden' }}>
       {/* Desktop Table View */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="lead-table-desktop" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
           <thead>
             <tr
@@ -112,14 +112,14 @@ export default function LeadTable({
                 letterSpacing: '0.05em',
               }}
             >
-              <th style={{ padding: '0.75rem 1rem' }}>Student Name</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Contact Details</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Target Course</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Source</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Assigned To</th>
-              <th style={{ padding: '0.75rem 1rem' }}>Created</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Student Name</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Contact Details</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Target Course</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Source</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Status</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Assigned To</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem' }}>Created</th>
+              <th scope="col" style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -157,13 +157,13 @@ export default function LeadTable({
                       >
                         {initial}
                       </div>
-                      <span
-                        style={{ cursor: 'pointer', color: 'var(--text-main)' }}
-                        onClick={() => navigate(`/leads/${lead.id}`)}
-                        title="Click to view details"
+                      <Link
+                        to={`/leads/${lead.id}`}
+                        style={{ color: 'var(--text-main)' }}
+                        title="View enquiry details"
                       >
                         {lead.full_name}
-                      </span>
+                      </Link>
                     </div>
                   </td>
 
@@ -249,6 +249,39 @@ export default function LeadTable({
           </tbody>
         </table>
       </div>
+
+      {/* Mobile Card View (shown ≤ 768px via CSS) */}
+      <ul className="lead-cards-mobile" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {leads.map((lead) => (
+          <li key={lead.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+            <Link
+              to={`/leads/${lead.id}`}
+              style={{ display: 'block', padding: '0.875rem 1rem', color: 'inherit' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-main)', minWidth: 0, overflowWrap: 'anywhere' }}>
+                  {lead.full_name}
+                </span>
+                <Badge variant={lead.status} style={{ flexShrink: 0 }}>{lead.status}</Badge>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <GraduationCap size={13} color="var(--primary)" aria-hidden="true" /> {lead.course_interest}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <Phone size={13} aria-hidden="true" /> {lead.phone}
+                </span>
+                <span style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <User size={12} aria-hidden="true" /> {lead.assigned_to_profile?.full_name || 'Unassigned'}
+                  </span>
+                  <span>{formatDate(lead.created_at)}</span>
+                </span>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

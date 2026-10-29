@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import { fetchLeads, fetchCounsellors } from '../../services/leadService';
 import { createFollowUp } from '../../services/followUpService';
 import useAuth from '../../context/useAuth';
+import useToast from '../../context/useToast';
 
 // Default due time: tomorrow at 10:00 local, formatted for <input type="datetime-local">
 function defaultDueValue() {
@@ -35,6 +36,7 @@ const inputStyle = {
  */
 export default function CreateFollowUpModal({ onClose, onCreated, lead = null }) {
   const { user } = useAuth();
+  const toast = useToast();
   const [leadId, setLeadId] = useState(lead?.id || '');
   const [dueAt, setDueAt] = useState(defaultDueValue);
   const [note, setNote] = useState('');
@@ -65,6 +67,7 @@ export default function CreateFollowUpModal({ onClose, onCreated, lead = null })
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
+    if (submitting) return;
 
     if (!leadId) {
       setErrorMsg('Please select the enquiry this follow-up is for.');
@@ -88,6 +91,7 @@ export default function CreateFollowUpModal({ onClose, onCreated, lead = null })
       if (error) {
         setErrorMsg(error);
       } else {
+        toast.success('Follow-up scheduled.');
         if (onCreated) onCreated(data);
         onClose();
       }
@@ -120,6 +124,7 @@ export default function CreateFollowUpModal({ onClose, onCreated, lead = null })
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {errorMsg && (
           <div
+            role="alert"
             style={{
               padding: '0.75rem',
               borderRadius: 'var(--radius-md)',
@@ -173,11 +178,12 @@ export default function CreateFollowUpModal({ onClose, onCreated, lead = null })
                 required
                 value={dueAt}
                 onChange={(e) => setDueAt(e.target.value)}
+                aria-describedby={isPastDue ? 'followup-due-hint' : undefined}
                 style={inputStyle}
               />
             </div>
             {isPastDue && (
-              <span style={{ fontSize: '0.75rem', color: '#b45309' }}>
+              <span id="followup-due-hint" style={{ fontSize: '0.75rem', color: '#b45309' }}>
                 This time is in the past — the follow-up will be marked Overdue.
               </span>
             )}

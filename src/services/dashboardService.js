@@ -1,4 +1,5 @@
 import { supabase, isConfigured } from '../lib/supabaseClient';
+import { friendlyError } from '../lib/errorMessages';
 import { STATUS_OPTIONS } from './leadService';
 
 /**
@@ -87,6 +88,6 @@ export async function fetchDashboardMetrics() {
     };
   } catch (err) {
     console.error('[dashboardService] fetchDashboardMetrics error:', err);
-    return { data: EMPTY_METRICS, error: err.message || 'Failed to load dashboard metrics' };
+    return { data: EMPTY_METRICS, error: friendlyError(err, 'Failed to load dashboard metrics') };
   }
 }

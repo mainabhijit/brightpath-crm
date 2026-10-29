@@ -360,7 +360,7 @@ export default function LoginPage() {
             {/* Full Name field (Register only) */}
             {isRegister && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <label htmlFor="login-full-name" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   Full Name
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -368,7 +368,7 @@ export default function LoginPage() {
                     size={16}
                     style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
                   />
-                  <input
+                  <input id="login-full-name" autoComplete="name"
                     type="text"
                     required
                     placeholder="e.g. Abhijit Rout"
@@ -389,7 +389,7 @@ export default function LoginPage() {
 
             {/* Email Field */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <label htmlFor="login-email" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 Email Address
               </label>
               <div style={{ position: 'relative' }}>
@@ -397,7 +397,7 @@ export default function LoginPage() {
                   size={16}
                   style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
                 />
-                <input
+                <input id="login-email" autoComplete="email"
                   type="email"
                   required
                   placeholder="name@brightpath.edu"
@@ -417,7 +417,7 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <label htmlFor="login-password" style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 Password
               </label>
               <div style={{ position: 'relative' }}>
@@ -425,7 +425,7 @@ export default function LoginPage() {
                   size={16}
                   style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
                 />
-                <input
+                <input id="login-password" autoComplete={isRegister ? 'new-password' : 'current-password'}
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"

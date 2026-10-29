@@ -23,7 +23,7 @@
   /* Typography & Text */
   --text-main: #0f172a;
   --text-secondary: #334155;
-  --text-muted: #64748b;
+  --text-muted: #5b6b80; /* ≥4.5:1 on white, page, and slate-100 surfaces (WCAG AA) */
   --text-subtle: #94a3b8;
   --text-inverse: #ffffff;
   --text-sidebar: #94a3b8;
@@ -638,5 +638,243 @@ input, select, textarea {
 @media (max-width: 900px) {
   .auth-showcase {
     display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Accessibility & Mobile Hardening (Phase 8)
+   ========================================================================== */
+
+/* Skip link: hidden until focused with the keyboard */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+/* Lighter focus ring on the dark sidebar so it stays visible */
+.app-sidebar :focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* Inputs get a visible ring too (browsers often suppress the default) */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 0;
+  border-color: var(--primary) !important;
+}
+
+/* Modal body & footer (moved out of inline styles for the mobile override below) */
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  max-height: calc(85vh - 120px);
+}
+
+.modal-footer {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.modal-content:focus {
+  outline: none;
+}
+
+/* Toasts */
+.toast-viewport {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(380px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.toast-region {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.875rem;
+  color: var(--text-main);
+  pointer-events: auto;
+  animation: toastIn 0.2s ease-out;
+}
+
+.toast-success { border-color: var(--status-converted-border); }
+.toast-success .toast-icon { color: var(--status-converted-text); }
+.toast-error { border-color: var(--status-lost-border); background-color: var(--status-lost-bg); }
+.toast-error .toast-icon { color: var(--status-lost-text); }
+.toast-info { border-color: var(--status-new-border); }
+.toast-info .toast-icon { color: var(--status-new-text); }
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  padding: 0.25rem;
+  margin: -0.125rem -0.25rem 0 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.toast-close:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-main);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Lead list: table on desktop, cards on mobile */
+.lead-cards-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .lead-table-desktop {
+    display: none;
+  }
+
+  .lead-cards-mobile {
+    display: block;
+  }
+
+  /* Search and filter dropdowns each take a full row */
+  .lead-filters-row > * {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app-topbar {
+    padding: 0 1rem;
+  }
+
+  .topbar-right {
+    gap: 0.5rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-actions {
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  input,
+  select,
+  textarea {
+    font-size: 1rem !important;
+  }
+
+  /* Comfortable touch targets */
+  .btn,
+  .btn-sm {
+    min-height: 40px;
+  }
+
+  .toast-viewport {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+/* Small phones: modals become bottom sheets using the full width */
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-content {
+    max-width: 100% !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 92vh;
+  }
+
+  .modal-body {
+    max-height: calc(92vh - 130px);
+  }
+
+  .modal-footer > .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Keep the loading spinner visibly turning, just slower */
+  .spinner {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Windows High Contrast / forced colours: keep badges and toasts outlined */
+@media (forced-colors: active) {
+  .badge,
+  .toast {
+    border: 1px solid CanvasText;
   }
 }

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, LogOut } from 'lucide-react';
 import Sidebar from './Sidebar';
-import Modal from '../common/Modal';
-import Button from '../common/Button';
+import ErrorBoundary from '../common/ErrorBoundary';
+import CreateLeadModal from '../../features/leads/CreateLeadModal';
 import RoleBadge from '../auth/RoleBadge';
 import useAuth from '../../context/useAuth';
+
+const MOBILE_QUERY = '(max-width: 768px)';
 
 export default function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,6 +15,24 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, role, signOut } = useAuth();
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
+
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const handleChange = (e) => setIsMobile(e.matches);
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, []);
+
+  // Escape closes the mobile drawer
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
 
   // Determine current page title
   function getPageTitle() {
@@ -34,16 +54,14 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* Sidebar (Desktop and Mobile Drawer) */}
       <Sidebar
         isOpen={mobileMenuOpen}
+        // Off-canvas drawer must not be reachable by Tab / screen readers while hidden
+        inert={isMobile && !mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        onNewEnquiryClick={() => {
-          if (location.pathname !== '/leads') {
-            navigate('/leads');
-          }
-          setIsNewLeadModalOpen(true);
-        }}
+        onNewEnquiryClick={() => setIsNewLeadModalOpen(true)}
       />
 
       {/* Main Content Viewport */}
@@ -55,7 +73,9 @@ export default function AppLayout() {
               type="button"
               className="mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle Navigation Menu"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="app-sidebar"
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -73,6 +93,7 @@ export default function AppLayout() {
               className="btn btn-outline btn-sm"
               style={{ padding: '0.375rem 0.5rem' }}
               title="Notifications"
+              aria-label="Notifications"
             >
               <Bell size={16} />
             </button>
@@ -101,6 +122,7 @@ export default function AppLayout() {
                   fontWeight: 700,
                 }}
                 title={user?.email || displayName}
+                aria-hidden="true"
               >
                 {initials}
               </div>
@@ -112,6 +134,7 @@ export default function AppLayout() {
                   className="btn btn-ghost btn-sm"
                   style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}
                   title="Sign Out"
+                  aria-label="Sign Out"
                 >
                   <LogOut size={14} />
                   <span className="hide-on-mobile">Sign Out</span>
@@ -122,58 +145,21 @@ export default function AppLayout() {
         </header>
 
         {/* Page Content Container */}
-        <main className="page-content-area">
-          <Outlet context={{ openCreateLeadModal: () => setIsNewLeadModalOpen(true) }} />
+        <main id="main-content" className="page-content-area" tabIndex={-1}>
+          {/* Keyed by route so a crash on one page clears when navigating away */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet context={{ openCreateLeadModal: () => setIsNewLeadModalOpen(true) }} />
+          </ErrorBoundary>
         </main>
       </div>
 
-      {/* Placeholder Lead Modal for Phase 1 Navigation Verification */}
-      <Modal
-        isOpen={isNewLeadModalOpen}
-        onClose={() => setIsNewLeadModalOpen(false)}
-        title="Create New Student Enquiry"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setIsNewLeadModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={() => setIsNewLeadModalOpen(false)}>
-              Save Enquiry (Demo)
-            </Button>
-          </>
-        }
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            This modal shell verifies interactive dialog state and layout.
-            Full database persistence with Supabase will be activated in Phase 5.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Student Full Name</label>
-            <input
-              type="text"
-              placeholder="e.g. Aarav Sharma"
-              style={{
-                padding: '0.5rem 0.75rem',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius-md)',
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Phone Number</label>
-            <input
-              type="tel"
-              placeholder="e.g. +91 9876543210"
-              style={{
-                padding: '0.5rem 0.75rem',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius-md)',
-              }}
-            />
-          </div>
-        </div>
-      </Modal>
+      {/* Global "New Enquiry" (sidebar) — opens the real create form from any page */}
+      {isNewLeadModalOpen && (
+        <CreateLeadModal
+          onClose={() => setIsNewLeadModalOpen(false)}
+          onLeadCreated={(newLead) => navigate(`/leads/${newLead.id}`)}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { supabase, isConfigured } from '../lib/supabaseClient';
+import { friendlyError } from '../lib/errorMessages';
 
 /**
  * Activity Audit Log Service Layer
@@ -28,7 +29,7 @@ export async function logActivity({ leadId, actorId = null, type, description, m
     return { error: null };
   } catch (err) {
     console.error('[activityService] logActivity error:', err);
-    return { error: err.message || 'Failed to log activity' };
+    return { error: friendlyError(err, 'Failed to log activity') };
   }
 }
 
@@ -54,6 +55,6 @@ export async function getLeadActivities(leadId) {
     return { data: data || [], error: null };
   } catch (err) {
     console.error('[activityService] getLeadActivities error:', err);
-    return { data: [], error: err.message || 'Failed to fetch activities' };
+    return { data: [], error: friendlyError(err, 'Failed to fetch activities') };
   }
 }

@@ -38,7 +38,7 @@ export default function MetricCards({ metrics }) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
         gap: '1rem',
         marginBottom: '1.5rem',
       }}

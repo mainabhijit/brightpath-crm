@@ -12,7 +12,7 @@ import {
 import useAuth from '../../context/useAuth';
 import RoleBadge from '../auth/RoleBadge';
 
-export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
+export default function Sidebar({ isOpen, onClose, onNewEnquiryClick, inert = false }) {
   const { user, profile, role, signOut } = useAuth();
 
   const navItems = [
@@ -40,7 +40,12 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
       />
 
       {/* Sidebar Container */}
-      <aside className={`app-sidebar ${isOpen ? 'drawer-open' : ''}`}>
+      <aside
+        id="app-sidebar"
+        className={`app-sidebar ${isOpen ? 'drawer-open' : ''}`}
+        aria-label="Main navigation"
+        inert={inert}
+      >
         {/* Brand Header */}
         <div className="sidebar-brand">
           <div className="brand-icon-wrapper">
@@ -55,6 +60,7 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
         {/* Quick Action Button */}
         <div style={{ padding: '1rem 0.875rem 0.25rem' }}>
           <button
+            type="button"
             onClick={() => {
               if (onClose) onClose();
               if (onNewEnquiryClick) onNewEnquiryClick();
@@ -90,7 +96,7 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
 
         {/* Authenticated User Profile Footer */}
         <div className="sidebar-footer">
-          <div className="user-avatar" aria-label="User avatar">
+          <div className="user-avatar" aria-hidden="true">
             {initials}
           </div>
           <div className="user-info">
@@ -106,7 +112,7 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
               title="Sign Out"
               aria-label="Sign Out"
               style={{
-                color: '#94a3b8',
+                color: 'var(--text-sidebar)',
                 padding: '0.375rem',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
@@ -116,7 +122,7 @@ export default function Sidebar({ isOpen, onClose, onNewEnquiryClick }) {
                 transition: 'color 150ms',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-sidebar)')}
             >
               <LogOut size={16} />
             </button>

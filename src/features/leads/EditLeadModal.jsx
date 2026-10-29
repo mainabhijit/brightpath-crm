@@ -5,55 +5,50 @@ import {
   updateLead,
   COURSE_OPTIONS,
   SOURCE_OPTIONS,
-  STATUS_OPTIONS,
   fetchCounsellors,
 } from '../../services/leadService';
 import useAuth from '../../context/useAuth';
+import useToast from '../../context/useToast';
+import { validateLeadContact } from '../../lib/validation';
 
-export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) {
+/**
+ * Mount only while open so the form is initialised from the current lead each time.
+ * Status is intentionally not editable here: stage changes go through the
+ * Stage selector, which enforces the Lost reason and logs the transition.
+ */
+export default function EditLeadModal({ onClose, lead, onLeadUpdated }) {
   const { user } = useAuth();
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [courseInterest, setCourseInterest] = useState('');
-  const [source, setSource] = useState('');
-  const [status, setStatus] = useState('');
-  const [assignedTo, setAssignedTo] = useState('');
-  const [notes, setNotes] = useState('');
+  const toast = useToast();
+  const [fullName, setFullName] = useState(lead.full_name || '');
+  const [phone, setPhone] = useState(lead.phone || '');
+  const [email, setEmail] = useState(lead.email || '');
+  const [courseInterest, setCourseInterest] = useState(lead.course_interest || COURSE_OPTIONS[0]);
+  const [source, setSource] = useState(lead.source || SOURCE_OPTIONS[0]);
+  const [assignedTo, setAssignedTo] = useState(lead.assigned_to || '');
+  const [notes, setNotes] = useState(lead.notes || '');
   const [counsellors, setCounsellors] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    if (isOpen && lead) {
-      setFullName(lead.full_name || '');
-      setPhone(lead.phone || '');
-      setEmail(lead.email || '');
-      setCourseInterest(lead.course_interest || COURSE_OPTIONS[0]);
-      setSource(lead.source || SOURCE_OPTIONS[0]);
-      setStatus(lead.status || 'New');
-      setAssignedTo(lead.assigned_to || '');
-      setNotes(lead.notes || '');
-      setErrorMsg('');
-
-      async function loadStaff() {
-        const { data } = await fetchCounsellors();
-        if (data) setCounsellors(data);
-      }
-      loadStaff();
-    }
-  }, [isOpen, lead]);
+    let cancelled = false;
+    fetchCounsellors().then(({ data }) => {
+      if (!cancelled && data) setCounsellors(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!fullName.trim()) {
-      setErrorMsg('Student full name is required');
-      return;
-    }
-    if (!phone.trim()) {
-      setErrorMsg('Phone number is required');
+    if (submitting) return;
+
+    const invalid = validateLeadContact({ fullName, phone, email });
+    if (invalid) {
+      setErrorMsg(invalid.message);
       return;
     }
 
@@ -65,7 +60,6 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
         email: email.trim() || null,
         course_interest: courseInterest,
         source,
-        status,
         assigned_to: assignedTo || null,
         notes: notes.trim() || null,
       };
@@ -74,6 +68,7 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
       if (error) {
         setErrorMsg(error);
       } else {
+        toast.success('Lead details saved.');
         onClose();
         if (onLeadUpdated) onLeadUpdated(data);
       }
@@ -86,7 +81,7 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
 
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen
       onClose={onClose}
       title="Edit Lead Information"
       maxWidth="560px"
@@ -103,12 +98,12 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {errorMsg && (
-          <p style={{ color: '#b91c1c', fontSize: '0.8125rem', fontWeight: 600 }}>{errorMsg}</p>
+          <p role="alert" style={{ color: '#b91c1c', fontSize: '0.8125rem', fontWeight: 600 }}>{errorMsg}</p>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-          <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Student Full Name</label>
-          <input
+          <label htmlFor="lead-edit-name" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Student Full Name</label>
+          <input id="lead-edit-name"
             type="text"
             required
             value={fullName}
@@ -117,10 +112,10 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Phone Number</label>
-            <input
+            <label htmlFor="lead-edit-phone" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Phone Number</label>
+            <input id="lead-edit-phone"
               type="tel"
               required
               value={phone}
@@ -129,8 +124,8 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Email Address</label>
-            <input
+            <label htmlFor="lead-edit-email" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Email Address</label>
+            <input id="lead-edit-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -139,10 +134,10 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Course Interest</label>
-            <select
+            <label htmlFor="lead-edit-course" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Course Interest</label>
+            <select id="lead-edit-course"
               value={courseInterest}
               onChange={(e) => setCourseInterest(e.target.value)}
               style={{ padding: '0.55rem 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff' }}
@@ -153,8 +148,8 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
             </select>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Source</label>
-            <select
+            <label htmlFor="lead-edit-source" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Source</label>
+            <select id="lead-edit-source"
               value={source}
               onChange={(e) => setSource(e.target.value)}
               style={{ padding: '0.55rem 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff' }}
@@ -166,22 +161,10 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              style={{ padding: '0.55rem 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff' }}
-            >
-              {STATUS_OPTIONS.map((st) => (
-                <option key={st} value={st}>{st}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Assigned To</label>
-            <select
+            <label htmlFor="lead-edit-assignee" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Assigned To</label>
+            <select id="lead-edit-assignee"
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
               style={{ padding: '0.55rem 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff' }}
@@ -195,8 +178,8 @@ export default function EditLeadModal({ isOpen, onClose, lead, onLeadUpdated }) 
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-          <label style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Counselling Notes</label>
-          <textarea
+          <label htmlFor="lead-edit-notes" style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Counselling Notes</label>
+          <textarea id="lead-edit-notes"
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

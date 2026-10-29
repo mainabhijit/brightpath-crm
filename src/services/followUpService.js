@@ -1,4 +1,5 @@
 import { supabase, isConfigured } from '../lib/supabaseClient';
+import { friendlyError } from '../lib/errorMessages';
 import { logActivity } from './activityService';
 
 /**
@@ -56,7 +57,7 @@ export async function fetchFollowUps({ leadId = null } = {}) {
     return { data: data || [], error: null };
   } catch (err) {
     console.error('[followUpService] fetchFollowUps error:', err);
-    return { data: [], error: err.message || 'Failed to fetch follow-ups' };
+    return { data: [], error: friendlyError(err, 'Failed to fetch follow-ups') };
   }
 }
 
@@ -102,7 +103,7 @@ export async function createFollowUp({ leadId, dueAt, note, assignedTo }, userId
     return { data, error: null };
   } catch (err) {
     console.error('[followUpService] createFollowUp error:', err);
-    return { data: null, error: err.message || 'Failed to schedule follow-up' };
+    return { data: null, error: friendlyError(err, 'Failed to schedule follow-up') };
   }
 }
 
@@ -137,6 +138,6 @@ export async function completeFollowUp(followUp, userId) {
     return { data, error: null };
   } catch (err) {
     console.error('[followUpService] completeFollowUp error:', err);
-    return { data: null, error: err.message || 'Failed to complete follow-up' };
+    return { data: null, error: friendlyError(err, 'Failed to complete follow-up') };
   }
 }
