@@ -73,7 +73,9 @@ src/
 └── index.css                Design tokens (CSS variables) and global styles
 
 supabase/
-├── migrations/20261023000001_initial_schema.sql   Tables, triggers, RLS policies
+├── migrations/                                    Run in filename order
+│   ├── 20261023000001_initial_schema.sql          Tables, triggers, RLS policies
+│   └── 20261029000001_restrict_get_user_role.sql  Signed-in-only access to the role helper
 ├── seed.sql                                       Optional demo data
 └── README.md                                      Database setup & admin promotion
 ```
@@ -138,7 +140,7 @@ Open http://localhost:5173, choose **Register**, and create your first account.
 
 Full step-by-step instructions, including a reset procedure, are in **[`supabase/README.md`](./supabase/README.md)**. In short:
 
-1. **Run the schema** — open Supabase **SQL Editor → New query**, paste the whole of `supabase/migrations/20261023000001_initial_schema.sql`, and click **Run**. This creates the 4 tables, triggers, indexes, and all RLS policies.
+1. **Run the migrations, in filename order** — open Supabase **SQL Editor → New query**, paste the whole of `supabase/migrations/20261023000001_initial_schema.sql`, and click **Run**. This creates the 4 tables, triggers, indexes, and all RLS policies. Repeat with `20261029000001_restrict_get_user_role.sql`.
 2. **Register your first user** in the app (`npm run dev` → Register). A database trigger automatically creates their `profiles` row with role `counsellor`.
 3. **(Optional) Load demo data** — run `supabase/seed.sql` in the SQL Editor. It inserts 6 sample leads with follow-ups and history, assigned to the first profile it finds, so run it *after* step 2.
 4. **Promote yourself to admin** (SQL Editor):
@@ -164,7 +166,7 @@ Deleting a lead cascades to its follow-ups and activities.
 
 ## 6. Security model (RLS)
 
-Row Level Security is enabled on every table. A user's role is read through the `SECURITY DEFINER` function `get_user_role()` to avoid recursive policy checks.
+Row Level Security is enabled on every table. A user's role is read through the `SECURITY DEFINER` function `get_user_role()` to avoid recursive policy checks. Only signed-in users may call it, so signed-out visitors cannot look up anyone's role.
 
 | Table | Read | Create | Update | Delete |
 |---|---|---|---|---|

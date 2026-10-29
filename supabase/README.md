@@ -15,6 +15,7 @@ You do **not** need the Supabase CLI installed. You can apply everything in 60 s
 4. Copy the entire contents of [`supabase/migrations/20261023000001_initial_schema.sql`](./migrations/20261023000001_initial_schema.sql).
 5. Paste it into the editor and click **Run** (green button).
 6. Verify output says: `Success. No rows returned`.
+7. Repeat steps 3–6 with [`supabase/migrations/20261029000001_restrict_get_user_role.sql`](./migrations/20261029000001_restrict_get_user_role.sql), which limits the role helper function to signed-in users.
 
 ### Step 2: (Optional) Run the Demo Seed Data
 1. In the **SQL Editor**, click **"New query"**.
@@ -70,4 +71,4 @@ DROP FUNCTION IF EXISTS public.get_user_role CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
 DROP FUNCTION IF EXISTS public.trigger_set_updated_at CASCADE;
 ```
-Then re-run `20261023000001_initial_schema.sql`.
+Then re-run every file in `migrations/` in filename order, starting with `20261023000001_initial_schema.sql`.
