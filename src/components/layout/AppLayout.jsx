@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Bell, LogOut } from 'lucide-react';
 import Sidebar from './Sidebar';
 import ErrorBoundary from '../common/ErrorBoundary';
+import PageFallback from '../common/PageFallback';
+import ConfigWarningBanner from '../common/ConfigWarningBanner';
 import CreateLeadModal from '../../features/leads/CreateLeadModal';
 import RoleBadge from '../auth/RoleBadge';
 import useAuth from '../../context/useAuth';
@@ -146,9 +148,12 @@ export default function AppLayout() {
 
         {/* Page Content Container */}
         <main id="main-content" className="page-content-area" tabIndex={-1}>
+          <ConfigWarningBanner />
           {/* Keyed by route so a crash on one page clears when navigating away */}
           <ErrorBoundary key={location.pathname}>
-            <Outlet context={{ openCreateLeadModal: () => setIsNewLeadModalOpen(true) }} />
+            <Suspense fallback={<PageFallback />}>
+              <Outlet context={{ openCreateLeadModal: () => setIsNewLeadModalOpen(true) }} />
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>

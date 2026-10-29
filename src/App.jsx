@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import LeadsPage from './pages/LeadsPage';
-import LeadDetailPage from './pages/LeadDetailPage';
-import FollowUpsPage from './pages/FollowUpsPage';
-import SettingsPage from './pages/SettingsPage';
-import NotFoundPage from './pages/NotFoundPage';
+import PageFallback from './components/common/PageFallback';
+
+// Route-level code splitting: each page loads on first visit, keeping the initial bundle small
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const LeadsPage = lazy(() => import('./pages/LeadsPage'));
+const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
+const FollowUpsPage = lazy(() => import('./pages/FollowUpsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 export default function App() {
   return (
@@ -19,6 +22,7 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
       <AuthProvider>
+        <Suspense fallback={<PageFallback />}>
         <Routes>
           {/* Public Auth Route */}
           <Route path="/login" element={<LoginPage />} />
@@ -35,6 +39,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
+        </Suspense>
       </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
